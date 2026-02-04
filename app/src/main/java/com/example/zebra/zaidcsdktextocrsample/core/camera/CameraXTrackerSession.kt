@@ -118,12 +118,17 @@ class CameraXTrackerSession(
         if (!resizeListenerRegistered) {
             resizeListenerRegistered = true
 
-            entityViewController.registerViewfinderResizeListener { specs ->
-                runCatching {
-                    val fov = specs.viewfinderFOVCropRegion
-                    fov?.let { t.setCropRect(RectF(it)) }
-                }.onFailure { Log.e(TAG, "Mapping update failed: ${it.message}", it) }
-            }
+            entityViewController.registerViewfinderResizeListener(object : EntityViewResizeListener {
+                override fun onViewfinderResized(specs: EntityViewResizeSpecs) {
+                    runCatching {
+                        // 1) Update the analyzer transform (sensor -> view)
+                        val s2v = specs.sensorToViewMatrix
+                        t.updateTransform(s2v)
+                    }.onFailure {
+                        Log.e(TAG, "Mapping update failed: ${it.message}", it)
+                    }
+                }
+            })
         }
 
         scope.launch {
