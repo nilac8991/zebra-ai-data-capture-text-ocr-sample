@@ -7,6 +7,11 @@ android {
     namespace = "com.example.zebra.zaidcsdktextocrsample"
     compileSdk = 36
 
+    androidResources {
+        noCompress.add("tar")
+        noCompress.add("tar.crypt")
+    }
+
     defaultConfig {
         applicationId = "com.example.zebra.zaidcsdktextocrsample"
         minSdk = 30
@@ -26,12 +31,18 @@ android {
             )
         }
     }
+
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
+
     kotlinOptions {
-        jvmTarget = "11"
+        jvmTarget = "17"
+    }
+
+    buildFeatures {
+        viewBinding = true
     }
 }
 
