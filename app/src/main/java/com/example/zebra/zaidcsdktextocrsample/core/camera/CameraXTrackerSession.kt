@@ -56,9 +56,6 @@ class CameraXTrackerSession(
     /** Prevents binding multiple times. */
     private var started = false
 
-    /** Ensures we register the viewfinder resize listener only once. */
-    private var resizeListenerRegistered = false
-
     /** Cached provider to allow unbinding on [close]. */
     private var provider: ProcessCameraProvider? = null
 
@@ -115,21 +112,17 @@ class CameraXTrackerSession(
             return
         }
 
-        if (!resizeListenerRegistered) {
-            resizeListenerRegistered = true
-
-            entityViewController.registerViewfinderResizeListener(object : EntityViewResizeListener {
-                override fun onViewfinderResized(specs: EntityViewResizeSpecs) {
-                    runCatching {
-                        // 1) Update the analyzer transform (sensor -> view)
-                        val s2v = specs.sensorToViewMatrix
-                        t.updateTransform(s2v)
-                    }.onFailure {
-                        Log.e(TAG, "Mapping update failed: ${it.message}", it)
-                    }
+        entityViewController.registerViewfinderResizeListener(object : EntityViewResizeListener {
+            override fun onViewfinderResized(specs: EntityViewResizeSpecs) {
+                runCatching {
+                    // 1) Update the analyzer transform (sensor -> view)
+                    val s2v = specs.sensorToViewMatrix
+                    t.updateTransform(s2v)
+                }.onFailure {
+                    Log.e(TAG, "Mapping update failed: ${it.message}", it)
                 }
-            })
-        }
+            }
+        })
 
         scope.launch {
             try {
