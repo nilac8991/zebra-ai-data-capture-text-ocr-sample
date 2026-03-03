@@ -6,6 +6,8 @@ import android.util.Log
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
+import androidx.camera.core.resolutionselector.ResolutionSelector
+import androidx.camera.core.resolutionselector.ResolutionStrategy
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.lifecycle.LifecycleOwner
 import com.example.zebra.zaidcsdktextocrsample.data.await
@@ -102,8 +104,14 @@ class CameraXTrackerSession(
         ) { result ->
             // TextOCR results are returned as a generic Entity list -> filter to ParagraphEntity.
             // Note: when paused, analyzer is detached; this callback should effectively stop firing.
-            val paragraphs = result.getValue(ocr).orEmpty().filterIsInstance<ParagraphEntity>()
-            onParagraphs(paragraphs)
+            val throwable = result.getThrowable(ocr)
+            if (throwable != null) {
+                Log.e(TAG, "TextOCR analysis error: ${throwable.message}", throwable)
+                onError(throwable)
+            } else {
+                val paragraphs = result.getValue(ocr).orEmpty().filterIsInstance<ParagraphEntity>()
+                onParagraphs(paragraphs)
+            }
         }
 
         val t = tracker ?: run {
@@ -126,13 +134,24 @@ class CameraXTrackerSession(
 
         scope.launch {
             try {
+                provider = ProcessCameraProvider.getInstance(context).await()
+
                 val preview = Preview.Builder().build().also {
                     it.surfaceProvider = entityViewController.surfaceProvider
                 }
 
-                provider = ProcessCameraProvider.getInstance(context).await()
+                val resolutionSelector = ResolutionSelector.Builder()
+                    .setResolutionStrategy(
+                        ResolutionStrategy(
+                            t.getDefaultTargetResolution(),
+                            ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER
+                        )
+                    )
+                    .build()
+
                 analysis = ImageAnalysis.Builder()
                     .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                    .setResolutionSelector(resolutionSelector)
                     .build()
                     .also { ia ->
                         if (!paused) {
@@ -141,6 +160,8 @@ class CameraXTrackerSession(
                             }
                         }
                     }
+
+                provider?.unbindAll()
 
                 val camera = provider?.bindToLifecycle(
                     lifecycleOwner,
