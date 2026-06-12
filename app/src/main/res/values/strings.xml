@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Z AI DCSDK Text OCR Sample</string>
+    <string name="app_name">Text OCR Sample</string>
 
     <string name="session_capture_resume_session_btn_title">Resume Session</string>
     <string name="session_capture_pause_session_btn_title">Pause Session</string>
